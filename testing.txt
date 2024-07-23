@@ -1,4 +1,5 @@
-  title: undefined,
+const [scheduledItem, setScheduledItem] = useState<IScheduledItem>({
+title: undefined,
   priority: "Normal",
   limitedAccess: false,
   scheduledDate: undefined,
