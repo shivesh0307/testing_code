@@ -1,0 +1,73 @@
+  title: undefined,
+  priority: "Normal",
+  limitedAccess: false,
+  scheduledDate: undefined,
+  briefSummary: undefined,
+  campaign: undefined,
+  teamId: undefined,
+  owner: undefined,
+  details: undefined,
+});
+
+// Update the state using a single function
+const updateScheduledItem = (updates: Partial<IScheduledItem>) => {
+  setScheduledItem((prev) => ({ ...prev, ...updates }));
+};
+
+// Example usage
+useLayoutEffect(() => {
+  const iocHelper = new IocHelper();
+
+  const storyRepository = iocHelper.getStoryRepository();
+  const campaignRepository = iocHelper.getCampaignRepository();
+  const teamRepository = iocHelper.getTeamRepository();
+  const ownerRepository = iocHelper.getOwnerRepository();
+
+  (async () => {
+    try {
+      if (id == null) {
+        console.log("No ID provided, skipping story fetch.");
+      } else {
+        const story = await storyRepository.get(id);
+        if (story == null) {
+          throw new Error(The story with the identification '${id}' was not found);
+        }
+
+        updateScheduledItem({
+          title: story.title ?? undefined,
+          priority: story.priority ?? "Normal",
+          limitedAccess: story.confidential,
+          scheduledDate: story.releaseDate ?? "",
+          campaign: story.campaign,
+          teamId: story.teamId,
+          owner: story.ownerId,
+        });
+        console.log("Story fetched successfully");
+      }
+
+      const campaignItems = await campaignRepository.getAll();
+      if (campaignItems == null) {
+        throw new Error("Error fetching campaigns");
+      }
+      setCampaigns(campaignItems);
+      console.log("Campaigns fetched successfully");
+
+      const teamItems = await teamRepository.getAll();
+      if (teamItems == null) {
+        throw new Error("Error fetching teams");
+      }
+      setTeamOptions(teamItems);
+      console.log("Teams fetched successfully");
+
+      const ownerItems = await ownerRepository.getAll();
+      if (ownerItems == null) {
+        throw new Error("Error fetching owners");
+      }
+      setOwnerOptions(ownerItems);
+      console.log("Owners fetched successfully");
+
+    } catch (error) {
+      console.error("Error during data fetch:", error);
+    }
+  })();
+}, [id]);
