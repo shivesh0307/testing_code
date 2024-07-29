@@ -72,3 +72,19 @@ useLayoutEffect(() => {
     }
   })();
 }, [id]);
+
+
+
+
+interface Team {
+  deleted: boolean;
+  elid: string;
+  emailDisabled: boolean;
+  teamId: number;
+  id: number;
+  name: string;
+  updatedOn: string;
+  createdOn: string;
+  createdByELID: string;
+  updatedByELID: string;
+}
