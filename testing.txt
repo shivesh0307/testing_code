@@ -88,3 +88,18 @@ interface Team {
   createdByELID: string;
   updatedByELID: string;
 }
+
+
+interface Owner {
+  accessDisabled: boolean;
+  displayName: string;
+  elid: string;
+  emailAddress: string;
+  emailDisabled: boolean;
+  emailOnAssignDisabled: boolean;
+  employeeId: string | null;
+  primaryTeamId: number;
+  primaryTeamName: string;
+  regulatedUser: boolean;
+  userId: string;
+}
