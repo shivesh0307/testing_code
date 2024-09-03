@@ -1,28 +1,40 @@
-import React from 'react';
-import { useDrag } from 'react-dnd';
+import React, { useRef } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
 
 const WorkflowStep = ({ step, index, moveStep }) => {
-  const ref = React.useRef(null);
+  const ref = useRef(null);
 
-  const [{ isDragging }, drag] = useDrag(() => ({
+  // Drag logic
+  const [{ isDragging }, drag] = useDrag({
     type: 'WORKFLOW_STEP',
-    item: { index },  // The index of the current step
+    item: { index },
     collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),  // Tracks whether this item is being dragged
+      isDragging: monitor.isDragging(),
     }),
-  }));
+  });
 
-  drag(ref);  // Connects the drag functionality to the DOM element
+  // Drop logic
+  const [, drop] = useDrop({
+    accept: 'WORKFLOW_STEP',
+    hover: (draggedItem) => {
+      if (draggedItem.index !== index) {
+        moveStep(draggedItem.index, index);
+        draggedItem.index = index; // Update the dragged item's index
+      }
+    },
+  });
+
+  drag(drop(ref));
 
   return (
     <div
       ref={ref}
       style={{
-        opacity: isDragging ? 0.5 : 1,  // Changes opacity when the item is dragged
+        opacity: isDragging ? 0.5 : 1,
         padding: '8px',
         marginBottom: '4px',
         backgroundColor: 'lightgrey',
-        cursor: 'move',  // Changes the cursor to indicate that the item can be moved
+        cursor: 'move',
       }}
     >
       {step.name}
@@ -31,6 +43,7 @@ const WorkflowStep = ({ step, index, moveStep }) => {
 };
 
 export default WorkflowStep;
+
 
 
 
