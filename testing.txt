@@ -1,105 +1,73 @@
-const [scheduledItem, setScheduledItem] = useState<IScheduledItem>({
-title: undefined,
-  priority: "Normal",
-  limitedAccess: false,
-  scheduledDate: undefined,
-  briefSummary: undefined,
-  campaign: undefined,
-  teamId: undefined,
-  owner: undefined,
-  details: undefined,
-});
+import React from 'react';
+import { useDrag } from 'react-dnd';
 
-// Update the state using a single function
-const updateScheduledItem = (updates: Partial<IScheduledItem>) => {
-  setScheduledItem((prev) => ({ ...prev, ...updates }));
+const WorkflowStep = ({ step, index, moveStep }) => {
+  const ref = React.useRef(null);
+
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'WORKFLOW_STEP',
+    item: { index },  // The index of the current step
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),  // Tracks whether this item is being dragged
+    }),
+  }));
+
+  drag(ref);  // Connects the drag functionality to the DOM element
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        opacity: isDragging ? 0.5 : 1,  // Changes opacity when the item is dragged
+        padding: '8px',
+        marginBottom: '4px',
+        backgroundColor: 'lightgrey',
+        cursor: 'move',  // Changes the cursor to indicate that the item can be moved
+      }}
+    >
+      {step.name}
+    </div>
+  );
 };
 
-// Example usage
-useLayoutEffect(() => {
-  const iocHelper = new IocHelper();
-
-  const storyRepository = iocHelper.getStoryRepository();
-  const campaignRepository = iocHelper.getCampaignRepository();
-  const teamRepository = iocHelper.getTeamRepository();
-  const ownerRepository = iocHelper.getOwnerRepository();
-
-  (async () => {
-    try {
-      if (id == null) {
-        console.log("No ID provided, skipping story fetch.");
-      } else {
-        const story = await storyRepository.get(id);
-        if (story == null) {
-          throw new Error(The story with the identification '${id}' was not found);
-        }
-
-        updateScheduledItem({
-          title: story.title ?? undefined,
-          priority: story.priority ?? "Normal",
-          limitedAccess: story.confidential,
-          scheduledDate: story.releaseDate ?? "",
-          campaign: story.campaign,
-          teamId: story.teamId,
-          owner: story.ownerId,
-        });
-        console.log("Story fetched successfully");
-      }
-
-      const campaignItems = await campaignRepository.getAll();
-      if (campaignItems == null) {
-        throw new Error("Error fetching campaigns");
-      }
-      setCampaigns(campaignItems);
-      console.log("Campaigns fetched successfully");
-
-      const teamItems = await teamRepository.getAll();
-      if (teamItems == null) {
-        throw new Error("Error fetching teams");
-      }
-      setTeamOptions(teamItems);
-      console.log("Teams fetched successfully");
-
-      const ownerItems = await ownerRepository.getAll();
-      if (ownerItems == null) {
-        throw new Error("Error fetching owners");
-      }
-      setOwnerOptions(ownerItems);
-      console.log("Owners fetched successfully");
-
-    } catch (error) {
-      console.error("Error during data fetch:", error);
-    }
-  })();
-}, [id]);
+export default WorkflowStep;
 
 
 
+import React, { useState } from 'react';
+import WorkflowStep from './WorkflowStep';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
-interface Team {
-  deleted: boolean;
-  elid: string;
-  emailDisabled: boolean;
-  teamId: number;
-  id: number;
-  name: string;
-  updatedOn: string;
-  createdOn: string;
-  createdByELID: string;
-  updatedByELID: string;
-}
+const WorkflowStepsList = () => {
+  const [steps, setSteps] = useState([
+    { id: 1, name: 'Step 1' },
+    { id: 2, name: 'Step 2' },
+    { id: 3, name: 'Step 3' },
+    { id: 4, name: 'Step 4' },
+  ]);
 
+  const moveStep = (fromIndex, toIndex) => {
+    const updatedSteps = [...steps];
+    const [movedStep] = updatedSteps.splice(fromIndex, 1);  // Remove the step from its original position
+    updatedSteps.splice(toIndex, 0, movedStep);  // Insert the step into its new position
+    setSteps(updatedSteps);  // Update the state with the new order
+  };
 
-interface Owner {
-  accessDisabled: boolean;
-  displayName: string;
-  elid: string;
-  emailAddress: string;
-  emailDisabled: boolean;
-  emailOnAssignDisabled: boolean;
-  employeeId: string | null;
-  primaryTeamId: number;
-  primaryTeamName: string;
-  regulatedUser: boolean;
-  userId: string;
-}
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div>
+        {steps.map((step, index) => (
+          <WorkflowStep
+            key={step.id}
+            index={index}
+            step={step}
+            moveStep={moveStep}
+          />
+        ))}
+      </div>
+    </DndProvider>
+  );
+};
+
+export default WorkflowStepsList;
