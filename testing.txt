@@ -1,86 +1,94 @@
-import React, { useRef } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
-
-const WorkflowStep = ({ step, index, moveStep }) => {
-  const ref = useRef(null);
-
-  // Drag logic
-  const [{ isDragging }, drag] = useDrag({
-    type: 'WORKFLOW_STEP',
-    item: { index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  // Drop logic
-  const [, drop] = useDrop({
-    accept: 'WORKFLOW_STEP',
-    hover: (draggedItem) => {
-      if (draggedItem.index !== index) {
-        moveStep(draggedItem.index, index);
-        draggedItem.index = index; // Update the dragged item's index
-      }
-    },
-  });
-
-  drag(drop(ref));
-
-  return (
-    <div
-      ref={ref}
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        padding: '8px',
-        marginBottom: '4px',
-        backgroundColor: 'lightgrey',
-        cursor: 'move',
-      }}
-    >
-      {step.name}
-    </div>
-  );
-};
-
-export default WorkflowStep;
+// IConnectionStringHelper.cs
+public interface IConnectionStringHelper
+{
+    string GetConnectionStringWithoutPassword();
+}
 
 
 
 
-import React, { useState } from 'react';
-import WorkflowStep from './WorkflowStep';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+// ConnectionStringHelper.cs
+using System.Data.SqlClient;
 
-const WorkflowStepsList = () => {
-  const [steps, setSteps] = useState([
-    { id: 1, name: 'Step 1' },
-    { id: 2, name: 'Step 2' },
-    { id: 3, name: 'Step 3' },
-    { id: 4, name: 'Step 4' },
-  ]);
+public class ConnectionStringHelper : IConnectionStringHelper
+{
+    private readonly string _connectionStringWithoutPassword;
 
-  const moveStep = (fromIndex, toIndex) => {
-    const updatedSteps = [...steps];
-    const [movedStep] = updatedSteps.splice(fromIndex, 1);  // Remove the step from its original position
-    updatedSteps.splice(toIndex, 0, movedStep);  // Insert the step into its new position
-    setSteps(updatedSteps);  // Update the state with the new order
-  };
+    public ConnectionStringHelper(string connectionString)
+    {
+        _connectionStringWithoutPassword = RemovePasswordFromConnectionString(connectionString);
+    }
 
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <div>
-        {steps.map((step, index) => (
-          <WorkflowStep
-            key={step.id}
-            index={index}
-            step={step}
-            moveStep={moveStep}
-          />
-        ))}
-      </div>
-    </DndProvider>
-  );
-};
+    // Method to remove the password from the connection string
+    private string RemovePasswordFromConnectionString(string connectionString)
+    {
+        var builder = new SqlConnectionStringBuilder(connectionString);
+        builder.Password = ""; // Remove the password
+        return builder.ToString();
+    }
 
-export default WorkflowStepsList;
+    public string GetConnectionStringWithoutPassword()
+    {
+        return _connectionStringWithoutPassword;
+    }
+}
+
+
+
+// Startup.cs
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+public class Startup
+{
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+
+    public IConfiguration Configuration { get; }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        // Get the connection string from configuration
+        var connectionString = Configuration.GetConnectionString("DefaultConnection");
+
+        // Register ConnectionStringHelper as a singleton
+        services.AddSingleton<IConnectionStringHelper>(provider =>
+        {
+            return new ConnectionStringHelper(connectionString);
+        });
+
+        // Add other services as needed
+        services.AddControllersWithViews(); // Example: Add MVC services
+    }
+
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+        else
+        {
+            app.UseExceptionHandler("/Home/Error");
+            app.UseHsts();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+
+        app.UseRouting();
+        app.UseAuthentication(); // If using authentication
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+        });
+    }
+}
+
+
