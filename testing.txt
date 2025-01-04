@@ -1,94 +1,19 @@
-// IConnectionStringHelper.cs
-public interface IConnectionStringHelper
-{
-    string GetConnectionStringWithoutPassword();
-}
+INSERT INTO A (WorkflowID, StepName)
+SELECT NEW_WorkflowID, StepName
+FROM A
+WHERE WorkflowID = OLD_WorkflowID;
 
+-- Create a temp table to store the mapping
+CREATE TABLE #StepMapping (OldStepID INT, NewStepID INT);
 
+-- Insert steps and capture the mapping
+INSERT INTO A (WorkflowID, StepName)
+OUTPUT INSERTED.StepID, A.StepID INTO #StepMapping
+SELECT NEW_WorkflowID, StepName
+FROM A
+WHERE WorkflowID = OLD_WorkflowID;
 
-
-// ConnectionStringHelper.cs
-using System.Data.SqlClient;
-
-public class ConnectionStringHelper : IConnectionStringHelper
-{
-    private readonly string _connectionStringWithoutPassword;
-
-    public ConnectionStringHelper(string connectionString)
-    {
-        _connectionStringWithoutPassword = RemovePasswordFromConnectionString(connectionString);
-    }
-
-    // Method to remove the password from the connection string
-    private string RemovePasswordFromConnectionString(string connectionString)
-    {
-        var builder = new SqlConnectionStringBuilder(connectionString);
-        builder.Password = ""; // Remove the password
-        return builder.ToString();
-    }
-
-    public string GetConnectionStringWithoutPassword()
-    {
-        return _connectionStringWithoutPassword;
-    }
-}
-
-
-
-// Startup.cs
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-
-public class Startup
-{
-    public Startup(IConfiguration configuration)
-    {
-        Configuration = configuration;
-    }
-
-    public IConfiguration Configuration { get; }
-
-    public void ConfigureServices(IServiceCollection services)
-    {
-        // Get the connection string from configuration
-        var connectionString = Configuration.GetConnectionString("DefaultConnection");
-
-        // Register ConnectionStringHelper as a singleton
-        services.AddSingleton<IConnectionStringHelper>(provider =>
-        {
-            return new ConnectionStringHelper(connectionString);
-        });
-
-        // Add other services as needed
-        services.AddControllersWithViews(); // Example: Add MVC services
-    }
-
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-    {
-        if (env.IsDevelopment())
-        {
-            app.UseDeveloperExceptionPage();
-        }
-        else
-        {
-            app.UseExceptionHandler("/Home/Error");
-            app.UseHsts();
-        }
-
-        app.UseHttpsRedirection();
-        app.UseStaticFiles();
-
-        app.UseRouting();
-        app.UseAuthentication(); // If using authentication
-        app.UseAuthorization();
-
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
-        });
-    }
-}
-
-
+INSERT INTO B (StepID, AssigneeName)
+SELECT M.NewStepID, B.AssigneeName
+FROM B
+JOIN #StepMapping M ON B.StepID = M.OldStepID;
